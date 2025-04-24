@@ -132,6 +132,7 @@ class XCTraceRecorder:
         self.print_log(f"subprocess pid {proc.pid}")
         try:
             proc.wait()
+
         except KeyboardInterrupt as e:
             self.print_log(f"KeyboardInterrupt {e}, send SIGINT，wait `record` stop")
             proc.send_signal(signal.SIGINT)
@@ -148,8 +149,12 @@ class XCTraceParser:
             self.id = trace_id
         self.trace_path = trace_path
         self.log_path = log_path
+#        self.temp_path = "./temp/parse"
+#        self.prefix_cmd = f"xcrun xctrace export --input {trace_path} "
         self.temp_path = "./temp/parse"
-        self.prefix_cmd = f"xcrun xctrace export --input {trace_path} "
+        os.makedirs(self.temp_path, exist_ok=True)  # 确保目录存在
+        os.makedirs("./temp/save", exist_ok=True)
+        self.prefix_cmd = f'xcrun xctrace export --input "{trace_path}" '  # 转义路径
         self.target_process_name = target_process_name
 
         self.fps_values = None
@@ -255,7 +260,6 @@ class XCTraceParser:
             st_fmt = self._get_cache_ele(row, ".//start-time", cm).attrib["fmt"]
             fps_text = self._get_cache_ele(row, ".//fps", cm).text
             fps_values.append({"fps": float(fps_text), "time": st_fmt})
-        self.print_log(f"fps_values {fps_values}")
 
         return fps_values
 
@@ -294,6 +298,8 @@ class XCTraceParser:
             cpu = self._get_cache_ele(row, ".//system-cpu-percent", cm)
             if cpu is not None:
                 cpu_text = cpu.text
+            else:
+                cpu_text = "-1"
             cpu_values.append(
                 {
                     "time": st_fmt,
@@ -316,8 +322,6 @@ class XCTraceParser:
                     "resident_size": float(resident_size) / 1024 / 1024,
                 }
             )
-        self.print_log(f"cpu_values {cpu_values}")
-        self.print_log(f"mem_values {mem_values}")
 
         return cpu_values, mem_values
 
@@ -328,20 +332,53 @@ class DataType:
     MEM = 2
 
 
-def date2timestamp(date_str, format_str="%M:%S"):
-    import time
+#def date2timestamp(date_str, format_str="%M:%S"):
+#    import time
+#
+#    tss1 = date_str
+#    time_array = time.strptime(tss1, format_str)
+#    return int(time.mktime(time_array))
+#
+#
+#def timestamp2date(timestamp, format_str="%M:%S"):
+#    import time
+#
+#    time_array = time.localtime(timestamp)
+#    date = time.strftime(format_str, time_array)
+#    return date
 
-    tss1 = date_str
-    time_array = time.strptime(tss1, format_str)
-    return int(time.mktime(time_array))
+def timestamp2date(seconds):
+    """将总秒数转换为 HH:MM:SS 格式"""
+    tempInt = int(seconds)
+    hours = tempInt // 3600
+    minutes = (tempInt % 3600) // 60
+    secs = tempInt % 60
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"
 
+def date2timestamp(duration_str):
+    """
+    将时长字符串转换为总秒数
+    支持格式:
+    - SS (秒)
+    - MM:SS (分:秒)
+    - HH:MM:SS (时:分:秒)
+    """
+    # print(f"duration_str:{duration_str}")
+    # parts = list(map(float, duration_str.split('.')))  # 分割整数和小数部分
+    # time_part = parts[0]
+    # sub_seconds = parts[1] if len(parts) > 1 else 0
 
-def timestamp2date(timestamp, format_str="%M:%S"):
-    import time
+    # 分割时、分、秒
+    segments = list(map(int, str(duration_str).split(':')))
+    segments.reverse()  # 从秒开始处理
 
-    time_array = time.localtime(timestamp)
-    date = time.strftime(format_str, time_array)
-    return date
+    seconds = 0
+    multipliers = [1, 60, 3600]  # 秒、分、时的倍数
+    for i, val in enumerate(segments):
+        seconds += val * multipliers[i]
+    # if seconds > 3600:
+    #     return 3600
+    return seconds
 
 
 class XCTraceVisualizer:
@@ -437,3 +474,4 @@ def get_random_id(length=8, seed="1234567890qwertyuiopasdfghjklzxcvbnm"):
 
 if __name__ == "__main__":
     main()
+
