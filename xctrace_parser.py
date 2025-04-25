@@ -115,11 +115,12 @@ class XCTraceParser:
         
         try:
             self._export_toc()
-            self._parse_fps()
+            self._parse_gpu_fps()
             self._parse_cpu_mem()
             
             # 反转时间序列（原始数据为倒序）
             self.fps_values = list(reversed(self.fps_values))
+            self.gpu_values = list(reversed(self.gpu_values))
             self.cpu_values = list(reversed(self.cpu_values))
             self.mem_values = list(reversed(self.mem_values))
             
@@ -164,7 +165,7 @@ class XCTraceParser:
         self.print_log(f"导出目录结构: {cmd}")
         os.system(cmd)
 
-    def _parse_fps(self):
+    def _parse_gpu_fps(self):
         """解析FPS数据"""
         xml_path = self._export_xml(
             schema_name="core-animation-fps-estimate",
@@ -390,15 +391,19 @@ class XCTraceVisualizer:
         for item in self._t_data:
             y_seq.append(item["value"])
             x_seq.append(item["time"])
-        # 获取最大值
-        max_v= max(y_seq)
 
-        # 获取最小值
-        min_v = min(y_seq)
+        fTitle = self.title
+        if y_seq:
+            # 获取最大值
+            max_v= max(y_seq)
 
-        # 获取平均值
-        ave_v = sum(y_seq) / len(y_seq)
-        fTitle = f"{self.title}: max: {max_v} min: {min_v} avg: {round(ave_v, 1)}"
+            # 获取最小值
+            min_v = min(y_seq)
+
+            # 获取平均值
+            ave_v = sum(y_seq) / len(y_seq)
+            fTitle = f"{self.title}: max: {max_v} min: {min_v} avg: {round(ave_v, 1)}"
+
         return ParsedData(
             title=fTitle, y_label=self._y_label, y_seq=y_seq, x_seq=x_seq
         )
