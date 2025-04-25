@@ -53,6 +53,13 @@ def main():
         data_detail=parser.fps_values
     ).transform_data()
 
+    gpu_data = XCTraceVisualizer(
+        title="GPU Data",
+        trace_id=trace_id,
+        data_type=DataType.GPU,
+        data_detail=parser.gpu_values
+    ).transform_data()
+
     cpu_data = XCTraceVisualizer(
         title="CPU Usage",
         trace_id=trace_id,
@@ -70,6 +77,7 @@ def main():
     # 生成可视化报告
     dv = DataVisualizer(html_path=html_path)
     dv.add_parsed_data(fps_data)
+    dv.add_parsed_data(gpu_data)
     dv.add_parsed_data(cpu_data)
     dv.add_parsed_data(mem_data)
     dv.render_html()
@@ -89,6 +97,7 @@ class XCTraceParser:
         
         # 数据存储
         self.fps_values = None
+        self.gpu_values = None
         self.cpu_values = None
         self.mem_values = None
 
@@ -130,6 +139,7 @@ class XCTraceParser:
             self.print_log(f"保存文件: {path}")
 
         _save(self.fps_values, "fps")
+        _save(self.gpu_values, "gpu")
         _save(self.cpu_values, "cpu")
         _save(self.mem_values, "mem")
 
@@ -166,18 +176,27 @@ class XCTraceParser:
         root = tree.getroot()
         
         fps_data = []
+        gpu_data = []
         cache = {}
         for row in root.findall(".//row"):
             time_ele = self._get_cached_element(row, ".//start-time", cache)
             fps_ele = self._get_cached_element(row, ".//fps", cache)
-            
+            gpu_ele = self._get_cached_element(row, ".//percent", cache)
+            fmt_time = time_ele.attrib["fmt"]
+
             fps_data.append({
-                "time": time_ele.attrib["fmt"],
+                "time": fmt_time,
                 "fps": float(fps_ele.text)
+            })
+
+            gpu_data.append({
+                "time": time_ele.attrib["fmt"],
+                "gpu": float(gpu_ele.text)
             })
         
         self.fps_values = fps_data
-        self.print_log(f"获取到 {len(fps_data)} 条FPS记录")
+        self.gpu_values = gpu_data
+        self.print_log(f"获取到 {len(fps_data)} 条FPS记录;  {len(gpu_data)} 条GPU记录")
 
     def _parse_cpu_mem(self):
         """解析CPU和内存数据"""
@@ -223,12 +242,12 @@ class XCTraceParser:
             if mem_ele is not None:
                 mem_text = mem_ele.text
             else:
-                mem_text = "-1"
+                mem_text = "0"
 
             if resident_ele is not None:
                 resident_text = resident_ele.text
             else:
-                resident_text = "-1"
+                resident_text = "0"
 
             cpu_data.append({"time": timestamp, "cpu": cpu_value})
             mem_data.append({
@@ -282,24 +301,25 @@ class XCTraceParser:
 # 保留原有DataType枚举和可视化类
 class DataType:
     FPS = 0
-    CPU = 1
-    MEM = 2
+    GPU = 1
+    CPU = 2
+    MEM = 3
 
 
-def date2timestamp(date_str, format_str="%M:%S"):
-    import time
+# def date2timestamp(date_str, format_str="%M:%S"):
+#     import time
 
-    tss1 = date_str
-    time_array = time.strptime(tss1, format_str)
-    return int(time.mktime(time_array))
+#     tss1 = date_str
+#     time_array = time.strptime(tss1, format_str)
+#     return int(time.mktime(time_array))
 
 
-def timestamp2date(timestamp, format_str="%H:%M:%S"):
-    import time
+# def timestamp2date(timestamp, format_str="%H:%M:%S"):
+#     import time
 
-    time_array = time.localtime(timestamp)
-    date = time.strftime(format_str, time_array)
-    return date
+#     time_array = time.localtime(timestamp)
+#     date = time.strftime(format_str, time_array)
+#     return date
 
 def seconds_to_hms(seconds):
     """将总秒数转换为 HH:MM:SS 格式"""
@@ -352,6 +372,9 @@ class XCTraceVisualizer:
         if t == DataType.FPS:
             self._y_label = "FPS"
             self._t_data = self._transform_fps_data()
+        elif t == DataType.GPU:
+            self._y_label = "GPU"
+            self._t_data = self._transform_gpu_data()
         elif t == DataType.CPU:
             self._y_label = "CPU"
             self._t_data = self._transform_cpu_data()
@@ -385,6 +408,18 @@ class XCTraceVisualizer:
         for item in self.data_detail:
             _time = item["time"]
             _value = item["fps"]
+            # ts = date2timestamp(_time.split(".")[0])
+            # 使用新函数计算总秒数
+            ts = duration_to_seconds(_time.split(".")[0])
+            d.append({"time": ts, "value": _value})
+        s_data = sorted(d, key=lambda item: item["time"])
+        return self._remove_same_time_data(s_data)
+
+    def _transform_gpu_data(self):
+        d = []
+        for item in self.data_detail:
+            _time = item["time"]
+            _value = item["gpu"]
             # ts = date2timestamp(_time.split(".")[0])
             # 使用新函数计算总秒数
             ts = duration_to_seconds(_time.split(".")[0])
