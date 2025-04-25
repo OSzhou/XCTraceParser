@@ -255,20 +255,28 @@ class XCTraceParser:
             
         first_element = None
         for ele in elements:
-            # if "id" in ele.attrib:
-            #     cache[ele.attrib["id"]] = ele
-            # elif "ref" in ele.attrib:
-            #     ele = cache[ele.attrib["ref"]]
-                
-            # if first_element is None:
-            #     first_element = ele
-            attrib = ele.attrib
-            if attrib.get("id"):
-                cache[attrib["id"]] = ele
-            else:
-                ele = cache[attrib["ref"]]
-            if not first_element:
+             # 处理引用逻辑
+            if "ref" in ele.attrib:
+                ref_id = ele.attrib["ref"]
+                if ref_id not in cache:
+                    self.print_log(f"严重警告: 跨行引用 {ref_id} 未找到，请检查XML结构！")
+                    continue
+                ele = cache[ref_id]
+
+            # 处理id逻辑
+            if "id" in ele.attrib:
+                cache[ele.attrib["id"]] = ele
+
+            # 记录第一个有效元素
+            if first_element is None:
                 first_element = ele
+            # attrib = ele.attrib
+            # if attrib.get("id"):
+            #     cache[attrib["id"]] = ele
+            # else:
+            #     ele = cache[attrib["ref"]]
+            # if not first_element:
+            #     first_element = ele
         return first_element
 
 # 保留原有DataType枚举和可视化类
@@ -283,7 +291,6 @@ def date2timestamp(date_str, format_str="%M:%S"):
 
     tss1 = date_str
     time_array = time.strptime(tss1, format_str)
-    print(f"date_str文件: {date_str}")
     return int(time.mktime(time_array))
 
 
@@ -292,7 +299,6 @@ def timestamp2date(timestamp, format_str="%H:%M:%S"):
 
     time_array = time.localtime(timestamp)
     date = time.strftime(format_str, time_array)
-    print(f"date文件: {date}")
     return date
 
 def seconds_to_hms(seconds):
@@ -305,7 +311,7 @@ def seconds_to_hms(seconds):
 def duration_to_seconds(duration_str):
     """
     将时长字符串转换为总秒数
-    支持格式: 
+    支持格式:
     - SS (秒)
     - MM:SS (分:秒)
     - HH:MM:SS (时:分:秒)
@@ -325,7 +331,7 @@ def duration_to_seconds(duration_str):
         seconds += val * multipliers[i]
     # if seconds > 3600:
     #     return 3600
-    return seconds 
+    return seconds
 
 
 
@@ -407,7 +413,7 @@ class XCTraceVisualizer:
             _time = item["time"]
             _value = item["value"]
             # _date = timestamp2date(item["time"])
-            _date = seconds_to_hms(item["time"])
+            _date = seconds_to_hms(_time)
             if before_item:
                 if before_item["time"] == _time:
                     filter_data[-1]["value"] = _value
