@@ -363,11 +363,21 @@ class XCTraceVisualizer:
     def _get_dv_parsed_data(self):
         y_seq = []
         x_seq = []
+
         for item in self._t_data:
             y_seq.append(item["value"])
             x_seq.append(item["time"])
+        # 获取最大值
+        max_v= max(y_seq)
+
+        # 获取最小值
+        min_v = min(y_seq)
+
+        # 获取平均值
+        ave_v = sum(y_seq) / len(y_seq)
+        fTitle = f"{self.title}: max: {max_v} min: {min_v} avg: {round(ave_v, 1)}"
         return ParsedData(
-            title=self.title, y_label=self._y_label, y_seq=y_seq, x_seq=x_seq
+            title=fTitle, y_label=self._y_label, y_seq=y_seq, x_seq=x_seq
         )
 
     def _transform_fps_data(self):
