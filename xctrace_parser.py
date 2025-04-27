@@ -43,7 +43,18 @@ def main():
 
     # 可视化流程
     print("开始可视化 Start visualize")
-    html_path = f"./temp/visualize/{trace_id}_report.html"
+
+    # 提取文件名（带扩展名）
+    file_name_with_ext = os.path.basename(parser.trace_path)
+        
+    # 提取文件名（不带扩展名）
+    file_name_without_ext = os.path.splitext(file_name_with_ext)[0]
+    v_path = f"./temp/visualize/{file_name_without_ext}"
+
+    if not os.path.exists(v_path):
+        Path(v_path).mkdir(parents=True, exist_ok=True)
+        
+    html_path = v_path + f"/{trace_id}_report.html"
     
     # 转换数据格式
     fps_data = XCTraceVisualizer(
@@ -134,7 +145,10 @@ class XCTraceParser:
         
         def _save(data, suffix):
             filename = f"{self.trace_id}_{suffix}.json"
-            path = os.path.join(output_dir, filename)
+            d = output_dir + f"/{suffix}"
+            if not os.path.exists(d):
+                Path(d).mkdir(parents=True, exist_ok=True)
+            path = os.path.join(d, filename)
             with open(path, "w") as f:
                 json.dump(data, f, indent=2)
             self.print_log(f"保存文件: {path}")
@@ -475,13 +489,13 @@ class XCTraceVisualizer:
         return filter_data
 
 
-def get_random_id(length=8, seed="1234567890qwertyuiopasdfghjklzxcvbnm"):
-    import random
+# def get_random_id(length=8, seed="1234567890qwertyuiopasdfghjklzxcvbnm"):
+#     import random
 
-    result = ""
-    for _ in range(length):
-        result += random.choice(seed)
-    return result
+#     result = ""
+#     for _ in range(length):
+#         result += random.choice(seed)
+#     return result
 
 
 
