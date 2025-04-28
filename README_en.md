@@ -18,7 +18,10 @@ Xcode 12.0.1 + Python 3.7
 
 ## How to Use
 
-Simply run the script, and it will output the corresponding application performance data (FPS + CPU + memory) in JSON format. You can use `python xctrace_parser.py -h` to get help information.
+`python xctrace_parser.py`
+- Use -h to get help information. Running this script directly will output the performance data (fps + gpu + cpu + mem) of the corresponding application in JSON format.
+`python data_to_charts.py`
+- Use -h to get help information. Running this script directly will generate visual charts from the performance data JSON files in the target directory. If there are multiple files, the data will be categorized by (fps, gpu, cpu, mem) and displayed on the same chart.
 
 ## Technical Principles
 

@@ -15,9 +15,11 @@ XCode 12.0.1 + python 3.7
 - 生成图片，需要下载 [chromedriver](https://sites.google.com/a/chromium.org/chromedriver/downloads)
 
 ## 如何使用
+`python xctrace_parser.py`
+- 可用 `-h` 获取帮助信息。直接运行该脚本即可，最后会输出对应应用的性能数据（fps + gpu + cpu + mem）的 Json 。
 
-直接运行该脚本即可，最后会输出对应应用的性能数据（fps + cpu + mem）的 Json 。
-可用 `python xctrace_parser.py -h` 获取帮助信息。
+`python data_to_charts.py`
+- 可用 `-h` 获取帮助信息。直接运行该脚本即可，最后会把目标路径下已输出的性能数据的Json文件生成可视表格。多个文件会以（fps 、 gpu 、 cpu 、 mem）为类别，展示在同一张表格上。
 
 ## 技术原理
 
