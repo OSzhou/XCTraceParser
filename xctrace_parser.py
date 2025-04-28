@@ -27,8 +27,20 @@ def main():
     )
     args = parser.parse_args()
 
-    # 生成唯一ID（基于时间戳+随机数）
-    trace_id = f"{int(time.time())}_{random.randint(1000,9999)}"
+    # 提取文件名（带扩展名）
+    file_name_with_ext = os.path.basename(args.trace_path)
+        
+    # 提取文件名（不带扩展名）
+    file_name_without_ext = os.path.splitext(file_name_with_ext)[0]
+
+    prefix = f"{int(time.time())}"
+    if "_" in file_name_without_ext:
+        prefix = file_name_without_ext.split("_")[0]
+    elif len(file_name_without_ext) < 6:
+        prefix = file_name_without_ext
+
+    # 生成唯一ID（+随机数）
+    trace_id = f"{prefix}_{random.randint(1000,9999)}"
 
     # 解析流程
     log_path = f"./temp/parse/{trace_id}_parse.log"
@@ -44,16 +56,11 @@ def main():
     # 可视化流程
     print("开始可视化 Start visualize")
 
-    # 提取文件名（带扩展名）
-    file_name_with_ext = os.path.basename(parser.trace_path)
-        
-    # 提取文件名（不带扩展名）
-    file_name_without_ext = os.path.splitext(file_name_with_ext)[0]
     v_path = f"./temp/visualize/{file_name_without_ext}"
 
     if not os.path.exists(v_path):
         Path(v_path).mkdir(parents=True, exist_ok=True)
-        
+
     html_path = v_path + f"/{trace_id}_report.html"
     
     # 转换数据格式
